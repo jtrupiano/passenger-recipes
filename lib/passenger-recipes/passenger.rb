@@ -2,7 +2,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   abort "This version of sls_recipes is not compatible with Capistrano 1.x." unless respond_to?(:namespace)
 
   # Load in the common stuff
-  require 'sls_recipes/recipes/sls_deploy'
+  require 'capistrano-extensions/deploy'
   puts "Loading Passenger Recipes"
 
   # Override these at your own discretion!
@@ -29,7 +29,10 @@ Capistrano::Configuration.instance(:must_exist).load do
   # Finally, our passenger-specific recipes.
   namespace :deploy do
     desc <<-DESC
-      Overridden: Sets up directory structure on server
+      [passenger]: Displays onscreen the set of privileged tasks you should manually 
+      execute on your server.  We advise you to manually execute these as root,
+      and then proceed with deployment using a non-privileged user.  Execute this task
+      for specific instructions.
     DESC
     task :setup do
       puts "We at SLS will no longer be using the deploy:setup task.  All of these tasks should be executed manually.\n"
@@ -49,8 +52,9 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     desc <<-DESC
-      Overridden: Executes the first deploy.  Assumes the server is stopped, and that no previous
-      releases have been deployed (or that all have been removed)
+      [passenger]: Executes a cold deployment.  Assumes that the steps detailed in deploy:setup have
+      been manually executed, and that no previous releases have been deployed (or that they have all
+      been removed).  Note that this task runs deploy:check before allowing you to deploy.
     DESC
     task :cold do
       ensure_not_root
@@ -65,7 +69,9 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     desc <<-DESC
-      Overridden: regular old deploy
+      [passenger]: Executes an iterative deployment.  Assumes the app is already up and running.
+      Invoke this task directly if there are no changes to your Apache config file.  Otherwise,
+      invoke deploy:with_restart.
     DESC
     task :default do
       ensure_not_root
@@ -80,39 +86,16 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     desc <<-DESC
-      Just a regular deploy that also restarts apache.  This task should be invoked
-      when the apache config file is changed.
+      [passenger]: Just a regular deploy that also hard restarts apache.  This task should be invoked
+      when the apache config file is changed.  Otherwise deploy is sufficient.
     DESC
     task :with_restart do
       default
       restart_apache
     end
-    
-    desc <<-DESC
-      [internal] Creates shared filecolumn directories and symbolic links to them
-    DESC
-    task :create_shared_file_column_dirs, :roles => :app, :except => { :no_release => true } do
-      content_directories.each do |fc|
-        run <<-CMD
-          mkdir -p #{content_path}/#{fc} && 
-          ln -sf #{content_path}/#{fc} #{public_path}/#{fc} &&
-          chmod 775 -R #{content_path}/#{fc}
-        CMD
-      end
-    end
-    
-    desc <<-DESC
-      Invokes geminstaller to ensure that the proper gem set is installed on the server
-    DESC
-    task :gem_update, :roles => :app do
-      run <<-CMD
-        gem sources -u &&
-        geminstaller -e -c #{rails_config_path}/geminstaller.yml
-      CMD
-    end
 
     desc <<-DESC
-      [internal] Drops a symlink into apache's sites-enabled directory.  This task
+      [internal] [passenger]: Drops a symlink into apache's sites-enabled directory.  This task
       should be followed by a restart of apache.
     DESC
     task :link_apache_config, :roles => :app do
@@ -122,15 +105,16 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     desc <<-DESC
-      Restarts apache
+      [passenger]: Hard restarts apache-- the command for this is configurable via the :apache_restart_cmd
+      property.
     DESC
     task :restart_apache, :roles => :app do
       run "#{apache_restart_cmd} restart"
     end
     
     desc <<-DESC
-      Touches the /tmp/restart.txt file, forcing Apache to reload the Rails context
-      on successive requests.
+      [passenger]: Soft restarts Passenger by touching /tmp/restart.txt, forcing Apache to reload 
+      the Rails context on the next request.
     DESC
     task :restart_app, :roles => :app do
       run "touch #{latest_release}/tmp/restart.txt"
@@ -138,7 +122,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     
     # Overwritten
     desc <<-DESC
-      [internal] Touches up the released code. This is called by update_code \
+      [internal] [passenger]: Touches up the released code. This is called by update_code \
       after the basic deploy finishes. It assumes a Rails project was deployed, \
       so if you are deploying something else, you may want to override this \
       task with your own environment's requirements.
@@ -148,7 +132,9 @@ Capistrano::Configuration.instance(:must_exist).load do
       symlinks to the shared directory for the log, system, and tmp/pids \
       directories, and will lastly touch all assets in public/images, \
       public/stylesheets, and public/javascripts so that the times are \
-      consistent (so that asset timestamping works).
+      consistent (so that asset timestamping works).  This touch process \
+      is only carried out if the :normalize_asset_timestamps variable is \
+      set to true, which is the default.
     DESC
     task :finalize_update, :except => { :no_release => true } do
       run "chmod -R g+w #{latest_release}" if fetch(:group_writable, true)
@@ -163,7 +149,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         ln -s #{shared_path}/system #{latest_release}/public/system
       CMD
 
-      create_shared_file_column_dirs
+      create_shared_file_column_dirs # defined in capistrano-extensions
       
       if fetch(:normalize_asset_timestamps, true)
         stamp = Time.now.utc.strftime("%Y%m%d%H%M.%S")
