@@ -10,7 +10,6 @@ Capistrano::Configuration.instance(:must_exist).load do
 
   # variables introduced in 0.1.3
   _cset(:apache_group, "www-data")
-  _cset(:apache_conf_dir, "/etc/apache2/sites-enabled")
   _cset(:apache_restart_cmd, "/usr/sbin/apache2ctl")
 
   # variables introduced in 0.1.4
@@ -34,20 +33,18 @@ Capistrano::Configuration.instance(:must_exist).load do
       and then proceed with deployment using a non-privileged user.  Execute this task
       for specific instructions.
     DESC
-    task :setup do
+    task :setup, :except => { :no_release => true } do
       puts "We at SLS will no longer be using the deploy:setup task.  All of these tasks should be executed manually.\n"
-      apache_grp = fetch(apache_group, "<apache_group>")
+      puts "To get accurate values for the commands below, you should set the following variables: :apache_group, :deploy_to, :user, :application\n"
+      apache_grp = fetch(:apache_group, "<apache_group>")
       puts <<-TEXT
-        1) $> adduser --group #{apache_grp} deploy
-        2) $> mkdir -p #{release_path} #{content_path} #{log_path}
-        3) $> chown -R #{user}:#{apache_grp} #{deploy_to} #{log_path}
-        4) $> chmod 750 #{log_path}
-        5) $> ln -fs #{apache_conf} #{shared_path}/passenger.conf
-        6) $> chmod -R 755 #{deploy_to}
-        7) mysql> CREATE DATABASE #{db['database']};
+        1) $> adduser --group #{apache_grp} #{user}
+        2) $> mkdir -p #{releases_path} #{content_path} #{log_path}
+        3) $> ln -fs #{shared_path}/passenger.conf /etc/apache2/sites-enabled/#{application}.conf
+        4) $> chown -R #{user}:#{apache_grp} #{deploy_to} #{log_path}
+        5) $> chmod 750 #{log_path} #{deploy_to}
+        6) mysql> CREATE DATABASE #{db['database']};
                   GRANT ALL PRIVILEGES ON #{db['database']}.* TO '#{db['username']}'@localhost IDENTIFIED BY '#{db['password']}';
-
-        Lastly, don't forget to set the capistrano variable :apache_group
       TEXT
     end
     
@@ -109,7 +106,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       property.
     DESC
     task :restart_apache, :roles => :app do
-      run "#{apache_restart_cmd} restart"
+      run "sudo #{apache_restart_cmd} restart"
     end
     
     desc <<-DESC
@@ -129,12 +126,11 @@ Capistrano::Configuration.instance(:must_exist).load do
 
       This task will make the release group-writable (if the :group_writable \
       variable is set to true, which is the default). It will then set up \
-      symlinks to the shared directory for the log, system, and tmp/pids \
-      directories, and will lastly touch all assets in public/images, \
-      public/stylesheets, and public/javascripts so that the times are \
-      consistent (so that asset timestamping works).  This touch process \
-      is only carried out if the :normalize_asset_timestamps variable is \
-      set to true, which is the default.
+      symlinks to the shared directory for the log and tmp directories, and \
+      will lastly touch all assets in public/images, public/stylesheets, and \
+      public/javascripts so that the times are consistent (so that asset \
+      timestamping works).  This touch process is only carried out if the \
+      :normalize_asset_timestamps variable is set to true, which is the default.
     DESC
     task :finalize_update, :except => { :no_release => true } do
       run "chmod -R g+w #{latest_release}" if fetch(:group_writable, true)
@@ -142,11 +138,10 @@ Capistrano::Configuration.instance(:must_exist).load do
       # mkdir -p is making sure that the directories are there for some SCM's that don't
       # save empty folders
       run <<-CMD
-        rm -rf #{latest_release}/log #{latest_release}/public/system &&
+        rm -rf #{latest_release}/log &&
         mkdir -p #{latest_release}/public &&
         mkdir -p #{latest_release}/tmp &&
-        ln -s #{log_path} #{latest_release}/log &&
-        ln -s #{shared_path}/system #{latest_release}/public/system
+        ln -s #{log_path} #{latest_release}/log
       CMD
 
       create_shared_file_column_dirs # defined in capistrano-extensions

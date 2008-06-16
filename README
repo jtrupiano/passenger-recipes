@@ -17,13 +17,12 @@ below for more specific details.
 
 == FEATURES/PROBLEMS:
 
-* Enforces non-root and non-sudo deployment.  The deploy:setup task
-  does not actually execute anything, but rather outputs the a set
-  of instructions for you to manually execute.  The reason for this
-  is that certain aspects of setting up a server require root access.
-  Incremental deployment, by contrast, does not require this level of
-  privilege.  As such, we recommend that you take care of setting up
-  your server by yourself.
+* Enforces non-root deployment.  The deploy:setup task does not actually 
+  execute anything, but rather outputs the a set of instructions for you 
+  to manually execute.  The reason for this is that certain aspects of 
+  setting up a server require root access.  Incremental deployment, by 
+  contrast, does not require this level of privilege.  As such, we 
+  recommend that you take care of setting up your server by yourself.
   
   Note: to "lift" this restriction, you can simply override the 
   :ensure_not_root function.  However, this is not recommended, 
@@ -41,9 +40,6 @@ below for more specific details.
   # Which group does apache run as
   :apache_group --> www-data
   
-  # Which directory does apache blindly load conf files from
-  :apache_conf_dir --> /etc/apache2/sites-enabled
-  
   # Full path to the graceful restart command of apache
   :apache_restart_cmd --> /usr/sbin/apache2ctl
 
@@ -58,7 +54,7 @@ below for more specific details.
 == INSTALL:
 
 * rake gem
-* sudo gem install pkg/capistrano-extensions-0.1.0.gem --local
+* sudo gem install pkg/passenger-recipes-0.1.0.gem --local
 
 == LICENSE:
 
