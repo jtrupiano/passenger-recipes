@@ -18,7 +18,7 @@ below for more specific details.
 == FEATURES/PROBLEMS:
 
 * Enforces non-root deployment.  The deploy:setup task does not actually 
-  execute anything, but rather outputs the a set of instructions for you 
+  execute anything, but rather outputs a set of instructions for you 
   to manually execute.  The reason for this is that certain aspects of 
   setting up a server require root access.  Incremental deployment, by 
   contrast, does not require this level of privilege.  As such, we 
@@ -30,8 +30,10 @@ below for more specific details.
   
   def ensure_not_root; end
 
-* Enforces that Chad Wooley's GemInstaller gem is installed on the
-  server.  It *****
+* Sets up a symlink in the shared directory (passenger.conf) that is
+  updated on each successive deploy.  This allows you to change your
+  apache config through a deployment.  Note that you'll need sudoer
+  privilege to restart apache (deploy:with_restart) to restart apache.
 
 * NEW PROPERTIES --> DEFAULTS
   # Where is the apache config snippet 
@@ -49,12 +51,12 @@ below for more specific details.
 
 == REQUIREMENTS:
 
-* capistrano-extensions 0.1.0
+* capistrano-extensions 0.1.1
 
 == INSTALL:
 
 * rake gem
-* sudo gem install pkg/passenger-recipes-0.1.0.gem --local
+* sudo gem install pkg/passenger-recipes-0.1.1.gem --local
 
 == LICENSE:
 

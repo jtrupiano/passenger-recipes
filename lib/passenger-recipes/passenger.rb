@@ -7,19 +7,13 @@ Capistrano::Configuration.instance(:must_exist).load do
 
   # Override these at your own discretion!
   _cset(:apache_conf) {"#{latest_release}/config/#{rails_env}/apache.conf"}
-
-  # variables introduced in 0.1.3
   _cset(:apache_group, "www-data")
   _cset(:apache_restart_cmd, "/usr/sbin/apache2ctl")
 
-  # variables introduced in 0.1.4
-  _cset(:normalize_asset_timestamps, true)
-
   # dependencies
-  depend(:remote, :gem, "geminstaller", "0.4.1")            # ensure Chad Wooley's gem is installed
-  depend(:remote, :command, "geminstaller")                 # ensure the geminstaller executable can be found
-  depend(:remote, :executable, "\`which geminstaller\`")    # ensure that we can execute it
-  depend(:remote, :executable, lambda {apache_restart_cmd}) # ensure that our user can restart apache
+  #depend(:remote, :command, "geminstaller")                 # ensure the geminstaller executable can be found
+  #depend(:remote, :executable, "\`which geminstaller\`")    # ensure that we can execute it
+  #depend(:remote, :executable, lambda {apache_restart_cmd}) # ensure that our user can restart apache
 
   def ensure_not_root
     raise "Do not deploy as root" if user == "root"
@@ -58,7 +52,6 @@ Capistrano::Configuration.instance(:must_exist).load do
       check # let's not deploy if are dependencies aren't met
       transaction do
         update
-        gem_update
         migrate
         link_apache_config
         restart_apache
@@ -75,7 +68,6 @@ Capistrano::Configuration.instance(:must_exist).load do
       check # let's not deploy if are dependencies aren't met
       transaction do
         update
-        gem_update
         migrate
         link_apache_config
         restart_app
