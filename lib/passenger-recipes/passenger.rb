@@ -52,7 +52,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       check # let's not deploy if are dependencies aren't met
       transaction do
         update
-        migrate
+        load_schema
         link_apache_config
         restart_apache
       end
@@ -98,7 +98,8 @@ Capistrano::Configuration.instance(:must_exist).load do
       property.
     DESC
     task :restart_apache, :roles => :app do
-      run "sudo #{apache_restart_cmd} restart"
+      puts "********** LOG INTO THE SERVER AND RESTART APACHE NOW SO THAT YOUR NEW PASSENGER SITE WILL BE SERVED UP ********"
+      #run "#{apache_restart_cmd} restart"
     end
     
     desc <<-DESC
@@ -145,5 +146,15 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
     end
 
+  end
+  
+  desc <<-DESC
+    [internal] [passenger]: Loads the schema.rb file using rake db:schema:load.
+    This task is invoked during deploy:cold.  migrate is used in deploy:default.
+  DESC
+  task :load_schema, :roles => :db, :only => { :primary => true } do
+    rake = fetch(:rake, "rake")
+
+    run "cd #{release_path}; #{rake} RAILS_ENV=#{rails_env} db:schema:load"
   end
 end
