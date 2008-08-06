@@ -30,9 +30,10 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :setup, :except => { :no_release => true } do
       puts "We at SLS will no longer be using the deploy:setup task.  All of these tasks should be executed manually.\n"
       puts "To get accurate values for the commands below, you should set the following variables: :apache_group, :deploy_to, :user, :application\n"
+      puts "Note that the adduser command is specific to Debian/Ubuntu, and will be different on other distros.\n"
       apache_grp = fetch(:apache_group, "<apache_group>")
       puts <<-TEXT
-        1) $> adduser --group #{apache_grp} #{user}
+        1) $> adduser --ingroup #{apache_grp} #{user}
         2) $> mkdir -p #{releases_path} #{content_path} #{log_path}
         3) $> ln -fs #{shared_path}/passenger.conf /etc/apache2/sites-enabled/#{application}.conf
         4) $> chown -R #{user}:#{apache_grp} #{deploy_to} #{log_path}
