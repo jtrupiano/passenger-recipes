@@ -11,5 +11,5 @@ Gem::Specification.new do |s|
   
   s.files = Dir.glob("{lib}/**/*") + %w(README)
   
-  s.add_dependency(%q<capistrano-extensions>, ["= 0.1.2"])
+  s.add_dependency(%q<capistrano-extensions>, [">= 0.1.2"])
 end
