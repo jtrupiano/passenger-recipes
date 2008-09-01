@@ -32,10 +32,19 @@ Capistrano::Configuration.instance(:must_exist).load do
       puts "To get accurate values for the commands below, you should set the following variables: :apache_group, :deploy_to, :user, :application\n"
       puts "Note that the adduser command is specific to Debian/Ubuntu, and will be different on other distros.\n"
       apache_grp = fetch(:apache_group, "<apache_group>")
+      
+      case fetch(:target_os, :ubuntu).to_sym
+      when :ubuntu
+        adduser     = "useradd -G #{apache_grp} #{user}"
+        link_target = "/etc/apache2/sites-enabled/#{application}.conf"
+      when :centos
+        adduser     = "adduser --ingroup #{apache_grp} #{user}"
+        link_target = "/etc/httpd/conf.d/#{application}.conf"
+      end
       puts <<-TEXT
-        1) $> adduser --ingroup #{apache_grp} #{user}
+        1) $> #{adduser}
         2) $> mkdir -p #{releases_path} #{content_path} #{log_path}
-        3) $> ln -fs #{shared_path}/passenger.conf /etc/apache2/sites-enabled/#{application}.conf
+        3) $> ln -fs #{shared_path}/passenger.conf #{link_target}
         4) $> chown -R #{user}:#{apache_grp} #{deploy_to} #{log_path}
         5) $> chmod 750 #{log_path} #{deploy_to}
         6) mysql> CREATE DATABASE #{db['database']};
