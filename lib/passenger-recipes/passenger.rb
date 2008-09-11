@@ -1,5 +1,5 @@
 Capistrano::Configuration.instance(:must_exist).load do
-  abort "This version of sls_recipes is not compatible with Capistrano 1.x." unless respond_to?(:namespace)
+  abort "passenger-recipes is not compatible with Capistrano 1.x." unless respond_to?(:namespace)
 
   # Load in the common stuff
   require 'capistrano-extensions/deploy'
@@ -8,12 +8,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   # Override these at your own discretion!
   _cset(:apache_conf) {"#{latest_release}/config/#{rails_env}/apache.conf"}
   _cset(:apache_group, "www-data")
-  _cset(:apache_restart_cmd, "/usr/sbin/apache2ctl")
-
-  # dependencies
-  #depend(:remote, :command, "geminstaller")                 # ensure the geminstaller executable can be found
-  #depend(:remote, :executable, "\`which geminstaller\`")    # ensure that we can execute it
-  #depend(:remote, :executable, lambda {apache_restart_cmd}) # ensure that our user can restart apache
+  #_cset(:apache_restart_cmd, "/usr/sbin/apache2ctl")
 
   def ensure_not_root
     raise "Do not deploy as root" if user == "root"
@@ -28,17 +23,16 @@ Capistrano::Configuration.instance(:must_exist).load do
       for specific instructions.
     DESC
     task :setup, :except => { :no_release => true } do
-      puts "We at SLS will no longer be using the deploy:setup task.  All of these tasks should be executed manually.\n"
-      puts "To get accurate values for the commands below, you should set the following variables: :apache_group, :deploy_to, :user, :application\n"
-      puts "Note that the adduser command is specific to Debian/Ubuntu, and will be different on other distros.\n"
+      puts "\nBy default, passenger-recipes is configured such that deploy:setup does not execute any remote commands.  All of these tasks should be executed manually on your server using an appropriately-privileged user account.\n\n"
+      puts "To get accurate values for the commands below, you should set the following variables: :apache_group, :deploy_to, :user, :application, and :target_os (only :ubuntu and :centos are supported)\n\n"
       apache_grp = fetch(:apache_group, "<apache_group>")
       
       case fetch(:target_os, :ubuntu).to_sym
       when :ubuntu
-        adduser     = "useradd -G #{apache_grp} #{user}"
+        adduser     = "adduser --ingroup #{apache_grp} #{user}"
         link_target = "/etc/apache2/sites-enabled/#{application}.conf"
       when :centos
-        adduser     = "adduser --ingroup #{apache_grp} #{user}"
+        adduser     = "useradd -G #{apache_grp} #{user}"
         link_target = "/etc/httpd/conf.d/#{application}.conf"
       end
       puts <<-TEXT
@@ -104,9 +98,12 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     desc <<-DESC
-      [passenger]: Hard restarts apache-- the command for this is configurable via the :apache_restart_cmd
-      property.
+      [passenger]: Outputs a message to the user telling them to manually log in and restart apache.
+      Could potentially allow you to actually execute a command by checking to see if the user has exec
+      rights on the file (via a dependency), but I'm just not sure if we want to allow the deployment
+      user to restart apache. 
     DESC
+    # Hard restarts apache-- the command for this is configurable via the :apache_restart_cmd property.
     task :restart_apache, :roles => :app do
       puts "********** LOG INTO THE SERVER AND RESTART APACHE NOW SO THAT YOUR NEW PASSENGER SITE WILL BE SERVED UP ********"
       #run "#{apache_restart_cmd} restart"
