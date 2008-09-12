@@ -1,0 +1,7 @@
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+lib/passenger-recipes.rb
+lib/passenger-recipes/passenger.rb
+lib/passenger-recipes/version.rb

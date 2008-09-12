@@ -1,8 +1,0 @@
-# Created 2008-08-25
-
-v0.1.1
-2008-08-25
-  Loosened the dependency on capistrano-extensions from =0.1.2 to >=0.1.2.  capistrano-extensions jumped
-  to 0.1.3 today.
-  
-  
