@@ -5,7 +5,7 @@ require 'hoe'
 require './lib/passenger-recipes.rb'
 require "./lib/passenger-recipes/version"
 
-PKG_NAME      = "capistrano-extensions"
+PKG_NAME      = "passenger-recipes"
 PKG_BUILD     = ENV['PKG_BUILD'] ? '.' + ENV['PKG_BUILD'] : ''
 version = PassengerRecipes::Version::STRING.dup
 if ENV['SNAPSHOT'].to_i == 1
