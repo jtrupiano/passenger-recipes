@@ -21,19 +21,21 @@ below for more specific details.
   execute anything, but rather outputs a set of instructions for you 
   to manually execute.  The reason for this is that certain aspects of 
   setting up a server require root access.  Incremental deployment, by 
-  contrast, does not require this level of privilege.  As such, we 
-  recommend that you take care of setting up your server by yourself.
+  contrast, does not require this level of privilege.  As such, I
+  recommend that you take care of setting up your server manually.
   
   Note: to "lift" this restriction, you can simply override the 
-  :ensure_not_root function.  However, this is not recommended, 
-  considering Apache needs to own all of your files.  e.g.
+  :ensure_not_root function.  e.g.
   
   def ensure_not_root; end
+  
+  However, this is not recommended, considering Apache needs to own all 
+  of your files.
 
 * Sets up a symlink in the shared directory (passenger.conf) that is
   updated on each successive deploy.  This allows you to change your
-  apache config through a deployment.  Note that you'll need sudoer
-  privilege to restart apache (deploy:with_restart) to restart apache.
+  apache config through a deployment.  You'll need to log in manually 
+  as a privileged user to restart apache.
 
 * NEW PROPERTIES --> DEFAULTS
   # Where is the apache config snippet 
@@ -42,21 +44,18 @@ below for more specific details.
   # Which group does apache run as
   :apache_group --> www-data
   
-  # Full path to the graceful restart command of apache
-  :apache_restart_cmd --> /usr/sbin/apache2ctl
-
 == SYNOPSIS:
 
   FIX (code sample of usage)
 
 == REQUIREMENTS:
 
-* capistrano-extensions 0.1.1
+* capistrano-extensions 0.1.4
 
 == INSTALL:
 
 * rake gem
-* sudo gem install pkg/passenger-recipes-0.1.1.gem --local
+* sudo gem install pkg/passenger-recipes-0.1.2.gem --local
 
 == LICENSE:
 
