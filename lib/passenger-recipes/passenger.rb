@@ -1,3 +1,5 @@
+require 'passenger-recipes/slicehost'
+
 Capistrano::Configuration.instance(:must_exist).load do
   abort "passenger-recipes is not compatible with Capistrano 1.x." unless respond_to?(:namespace)
 
@@ -9,9 +11,16 @@ Capistrano::Configuration.instance(:must_exist).load do
   _cset(:apache_conf) {"#{latest_release}/config/#{rails_env}/apache.conf"}
   _cset(:apache_group, "www-data")
   #_cset(:apache_restart_cmd, "/usr/sbin/apache2ctl")
+  _cset(:default_shell, "/bin/bash")
 
   def ensure_not_root
     raise "Do not deploy as root" if user == "root"
+  end
+  
+  def read_password
+    system "stty -echo"
+    readline("")
+    system "stty echo"
   end
 
   # Finally, our passenger-specific recipes.
@@ -23,27 +32,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       for specific instructions.
     DESC
     task :setup, :except => { :no_release => true } do
-      puts "\nBy default, passenger-recipes is configured such that deploy:setup does not execute any remote commands.  All of these tasks should be executed manually on your server using an appropriately-privileged user account.\n\n"
-      puts "To get accurate values for the commands below, you should set the following variables: :apache_group, :deploy_to, :user, :application, and :target_os (only :ubuntu and :centos are supported)\n\n"
-      apache_grp = fetch(:apache_group, "<apache_group>")
       
-      case fetch(:target_os, :ubuntu).to_sym
-      when :ubuntu
-        adduser     = "adduser --ingroup #{apache_grp} #{user}"
-        link_target = "/etc/apache2/sites-enabled/#{application}.conf"
-      when :centos
-        adduser     = "useradd -G #{apache_grp} #{user}"
-        link_target = "/etc/httpd/conf.d/#{application}.conf"
-      end
-      puts <<-TEXT
-        1) $> #{adduser}
-        2) $> mkdir -p #{releases_path} #{content_path} #{log_path}
-        3) $> ln -fs #{shared_path}/passenger.conf #{link_target}
-        4) $> chown -R #{user}:#{apache_grp} #{deploy_to} #{log_path}
-        5) $> chmod 750 #{log_path} #{deploy_to}
-        6) mysql> CREATE DATABASE #{db['database']};
-                  GRANT ALL PRIVILEGES ON #{db['database']}.* TO '#{db['username']}'@localhost IDENTIFIED BY '#{db['password']}';
-      TEXT
     end
     
     desc <<-DESC
@@ -154,6 +143,58 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
   end
+  
+  namespace :servers do
+    
+    desc <<-DESC
+      [passenger]: Takes the default Ubuntu 8.04 Server Image from Slicehost and prepares a baseline install
+      ready for a single machine, using a MySQL 5.2 database, Apache 2.2.8, Passenger 2.0.3 (actually the most recent
+      stable release).  Additional setup should be applied manually. 
+    DESC
+    task :build do
+      puts "Put our Ubuntu_Slicehost wiki page content hya"
+    end
+    
+    desc <<-DESC
+      [passenger]: On a properly built Ubuntu slice, this will perform the necessary setup procedures for a single
+      machine install.  It sets up your shared content directories, your log directory (/var/log/<:application>),
+      chown's the directories to a lesser-privileged user (<:user>:<:apache_group>).  It will also create your
+      database.
+    DESC
+    task :setup do
+      # It would be cool to provide a feedback loop here to ensure that the values are set properly...
+      # :apache_group, :deploy_to, :user, :application, and :target_os (only :ubuntu and :centos are supported)
+      #puts "\nBy default, passenger-recipes is configured such that deploy:setup does not execute any remote commands.  All of these tasks should be executed manually on your server using an appropriately-privileged user account.\n\n"
+      #puts "To get accurate values for the commands below, you should set the following variables: :apache_group, :deploy_to, :user, :application, and :target_os (only :ubuntu and :centos are supported)\n\n"
+      # apache_grp = fetch(:apache_group, "<apache_group>")
+      # 
+      # adduser     = "adduser --ingroup #{apache_grp} #{user}"
+      # link_target = "/etc/apache2/sites-enabled/#{application}.conf"
+      # 
+      # run(adduser)
+      # run("mkdir -p #{releases_path} #{content_path} #{log_path}")
+      # run("ln -fs #{shared_path}/passenger.conf #{link_target}")
+      # run("chown -R #{user}:#{apache_grp} #{deploy_to} #{log_path}")
+      # run("chmod 750 #{log_path} #{deploy_to}")
+      # sql = <<-SQL
+      #   CREATE DATABASE #{db['database']};
+      #   GRANT ALL PRIVILEGES ON #{db['database']}.* TO '#{db['username']}'@localhost IDENTIFIED BY '#{db['password']}';
+      # SQL
+      # run("mysql -e \"#{sql}\"")
+      
+      puts "cap server:setup invoked"
+      server = Capistrano::Servers::Slicehost::Ubuntu.new(self)
+      server.setup
+    end
+  end
+      
+  # namespace :centos do        
+  #     task :setup do
+  #       # adduser     = "useradd -G #{apache_grp} #{user}"
+  #       # link_target = "/etc/httpd/conf.d/#{application}.conf"
+  #       # server::slicehost::general::setup
+  #     end
+  #   end  
   
   desc <<-DESC
     [internal] [passenger]: Loads the schema.rb file using rake db:schema:load.

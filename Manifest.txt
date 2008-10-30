@@ -4,5 +4,6 @@ README.txt
 Rakefile
 lib/passenger-recipes.rb
 lib/passenger-recipes/passenger.rb
+lib/passenger-recipes/slicehost.rb
 lib/passenger-recipes/version.rb
 passenger-recipes.gemspec

@@ -25,7 +25,8 @@ Hoe.new(PKG_NAME, PKG_VERSION) do |p|
   p.summary = p.description # More details later??
   p.remote_rdoc_dir = PKG_NAME # Release to /PKG_NAME
   #  p.changes = p.paragraphs_of('CHANGELOG', 0..1).join("\n\n")
-  p.extra_deps << ["capistrano-extensions", ">= 0.1.4"]
+  p.extra_deps << ["capistrano-extensions", ">= 0.1.4", "< 0.2.0"]
+  p.extra_deps << ["highline", ">= 1.2.9"]
   p.need_zip = true
   p.need_tar = false
 end
